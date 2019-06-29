@@ -127,6 +127,11 @@ extension Jukebox {
      Stops the playback.
      */
     public func stop() {
+        
+        if let item = currentItem?.playerItem {
+            unregisterForPlayToEndNotification(withItem: item)
+        }
+        
         invalidatePlayback()
         state = .ready
         UIApplication.shared.endBackgroundTask(backgroundIdentifier)
@@ -162,9 +167,15 @@ extension Jukebox {
             if playIndex >= queuedItems.count - 1 {
                 self.stop()
             } else {
+                if let item = currentItem?.playerItem {
+                    unregisterForPlayToEndNotification(withItem: item)
+                }
                 self.play(atIndex: playIndex + 1)
             }
         case .repeatAll:
+            if let item = currentItem?.playerItem {
+                unregisterForPlayToEndNotification(withItem: item)
+            }
             let nextIndex = (self.playIndex + 1) % self.queuedItems.count
             self.play(atIndex: nextIndex)
         }
