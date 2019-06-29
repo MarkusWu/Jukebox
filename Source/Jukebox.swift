@@ -67,6 +67,9 @@ extension Jukebox {
         }
         
         if queuedItems[trackNumber].playerItem != nil && self.trackNumber() == trackNumber {
+            if let playItem = queuedItems[trackNumber].playerItem {
+                registerForPlayToEndNotification(withItem: playItem)
+            }
             resumePlayback()
         } else {
             if let item = currentItem?.playerItem {
