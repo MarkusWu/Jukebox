@@ -99,7 +99,7 @@ extension Jukebox {
         var index = trackNumber
         
         if self.isShuffled {
-            if let num = self.shuffleIndex.index(of: trackNumber) {
+            if let num = self.shuffleIndex.firstIndex(of: trackNumber) {
                 
                 if num != 0 && self.queuedItems.count > 1 {
                     let item = self.shuffleIndex.remove(at: num)
@@ -224,7 +224,8 @@ extension Jukebox {
             sec = 0
         }
         
-        seek(toSecond: sec, shouldPlay: true)
+        self.seek(toSecond: sec, shouldPlay: true)
+        self.updateInfoCenter()
     }
     
     /**
@@ -257,6 +258,7 @@ extension Jukebox {
             }
         }
         delegate?.jukeboxPlaybackProgressDidChange(self)
+        self.updateInfoCenter()
     }
     
     /**
@@ -302,7 +304,7 @@ extension Jukebox {
     - parameter item: item to be removed
     */
     public func remove(item: JukeboxItem) {
-        if let trackNumber = queuedItems.index(where: {$0.identifier == item.identifier}) {
+        if let trackNumber = queuedItems.firstIndex(where: {$0.identifier == item.identifier}) {
             
             var item: JukeboxItem?
             
@@ -326,8 +328,8 @@ extension Jukebox {
                     self.shuffleTrackNumber()
                     
                     if item != nil {
-                        if let trackNum = self.queuedItems.index(of: item!) {
-                            if let playIndexNum = self.shuffleIndex.index(of: trackNum) {
+                        if let trackNum = self.queuedItems.firstIndex(of: item!) {
+                            if let playIndexNum = self.shuffleIndex.firstIndex(of: trackNum) {
                                 let tmp = self.shuffleIndex.remove(at: playIndexNum)
                                 self.shuffleIndex.insert(tmp, at: 0)
                                 self.playIndex = 0
@@ -470,7 +472,7 @@ open class Jukebox: NSObject, JukeboxItemDelegate {
                 self.shuffleTrackNumber()
                 
                 if self.currentItem?.playerItem != nil {
-                    if let num = self.shuffleIndex.index(of: self.playIndex) {
+                    if let num = self.shuffleIndex.firstIndex(of: self.playIndex) {
                         
                         let item = self.shuffleIndex.remove(at: num)
                         self.shuffleIndex.insert(item, at: 0)
@@ -537,7 +539,7 @@ open class Jukebox: NSObject, JukeboxItemDelegate {
     - parameter nowPlayingSetup: listen to Now Playing Center commands, if true. Otherwise, false.
     - returns: Jukebox instance
     */
-    public required init?(delegate: JukeboxDelegate? = nil, items: [JukeboxItem] = [JukeboxItem](), nowPlayingSetup: Bool = false)  {
+    public required init?(delegate: JukeboxDelegate? = nil, items: [JukeboxItem] = [JukeboxItem](), shouldSetUpRemoteCommands: Bool = false)  {
         self.delegate = delegate
         super.init()
         
@@ -551,8 +553,8 @@ open class Jukebox: NSObject, JukeboxItemDelegate {
         assignQueuedItems(items)
         configureObservers()
         
-        if nowPlayingSetup {
-            self.setupNowPlayingInfoCenter()
+        if shouldSetUpRemoteCommands {
+            self.setUpRemoteCommands()
         }
     }
     
@@ -570,7 +572,7 @@ open class Jukebox: NSObject, JukeboxItemDelegate {
      - returns: nil, if no such item in the queue. Otherwise, return the wanted item.
      */
     public func item(ofIdentifier identifier: String) -> JukeboxItem? {
-        if let num = self.queuedItems.index(where: {$0.identifier == identifier}) {
+        if let num = self.queuedItems.firstIndex(where: {$0.identifier == identifier}) {
             return self.queuedItems[num]
         }
         
@@ -645,7 +647,7 @@ open class Jukebox: NSObject, JukeboxItemDelegate {
     func jukeboxItemDidLoadPlayerItem(_ item: JukeboxItem) {
         delegate?.jukeboxDidLoadItem(self, item: item)
         
-        let trackNumber = queuedItems.index{$0 === item}
+        let trackNumber = queuedItems.firstIndex{$0 === item}
         
         guard let playItem = item.playerItem
             , state == .loading && self.trackNumber() == trackNumber else {return}
@@ -658,7 +660,7 @@ open class Jukebox: NSObject, JukeboxItemDelegate {
     
     // MARK: Playback
     
-    private func setupNowPlayingInfoCenter() {
+    private func setUpRemoteCommands() {
         UIApplication.shared.beginReceivingRemoteControlEvents()
         
         MPRemoteCommandCenter.shared().playCommand.addTarget {
@@ -949,6 +951,8 @@ open class Jukebox: NSObject, JukeboxItemDelegate {
                     self.delegate?.jukeboxDidEndInterruption(self)
                 }
             }
+        @unknown default:
+            break
         }
     }
     
